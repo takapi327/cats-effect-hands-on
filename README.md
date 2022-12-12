@@ -21,7 +21,7 @@ sbt compile
 
 以下参照
 
-- [ドキュメント]()
+- [ドキュメント](https://github.com/takapi327/cats-effect-hands-on/tree/master/chapter/hello-world/docs)
 - [アプリケーション](https://github.com/takapi327/cats-effect-hands-on/tree/master/chapter/hello-world)
 
 ## 2. Cats Effect IOに関して (1 ~ 10章ぐらい？) :warning:準備中:warning:
@@ -29,7 +29,7 @@ sbt compile
 
 以下参照
 
-- [ドキュメント]()
+- [ドキュメント](https://github.com/takapi327/cats-effect-hands-on/tree/master/chapter/cats-effect/docs)
 - [アプリケーション](https://github.com/takapi327/cats-effect-hands-on/tree/master/chapter/cats-effect)
 
 ## 3. doobie :warning:準備中:warning:
@@ -39,7 +39,7 @@ sbt compile
 
 以下参照
 
-- [ドキュメント]()
+- [ドキュメント](https://github.com/takapi327/cats-effect-hands-on/tree/master/chapter/doobie/docs)
 - [アプリケーション](https://github.com/takapi327/cats-effect-hands-on/tree/master/chapter/doobie)
 
 ## 4. http4sでCRUD :warning:準備中:warning:
@@ -49,7 +49,7 @@ Scala3 x Cats Effect x http4s x doobie
 
 以下参照
 
-- [ドキュメント]()
+- [ドキュメント](https://github.com/takapi327/cats-effect-hands-on/tree/master/chapter/crud/docs)
 - [アプリケーション](https://github.com/takapi327/cats-effect-hands-on/tree/master/chapter/crud)
 
 ## 5. おまけ :warning:準備中:warning:
