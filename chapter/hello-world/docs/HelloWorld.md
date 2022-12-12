@@ -313,25 +313,88 @@ Requestに対しての抽出子オブジェクトを用意し、unapplyメソッ
 
 # ルーター
 
+http4sのルーターは`Router`というobjectを使用して構築します。
+実装自体は以下のように行います。
+
+```scala
+val router: HttpRoutes[IO] = Router(
+  "/"    -> helloWorldService,
+  "/api" -> apiService
+)
+```
+
+---
+
+# ルーター
+
+Play Frameworkのroutesファイルを思い出してください。
+
+Play Frameworkはベースに`routes`ファイルを定義して、ある特定のパス配下のルーティングを別のファイルに切り出して実装を行うことができましたよね？
+
+`routes`と`sub.api.routes`ファイルがある場合
+
+```conf
+# routesファイルに定義
+-> /api sub.api.Routes
+```
+
+Routerの実装は、http4におけるこのPlay Frameworkと同じような実装だと思ってください。
+
+---
+
+# ルーター
+
+Routerを構築したはずなのに、戻り値の型がサービスと同じになっているのに気づいたでしょうか？
+なぜRouterを構築しているのに型は変わらないのか？
+
+実装を見て確認して見ましょう。
+
+```scala
+def apply[F[_]: Monad](mappings: (String, HttpRoutes[F])*): HttpRoutes[F] =
+  define(mappings: _*)(HttpRoutes.empty[F])
+```
+
+`apply`メソッドは`define`メソッドを呼んでいるのでそちらも見てみましょう。
+
+---
+
+# ルーター
+
+単純に何をやっているかというと文字列で指定したパスの情報が空でなかった場合に、受け取ったRequestのパス情報の最初が指定されたパスの文字列と一致していれば後続の処理を行い、一致していない場合はdefault(ここではempty)の処理を行うようになっています。
+
+```scala
+def define[F[_]: Monad](
+  mappings: (String, HttpRoutes[F])*
+)(default: HttpRoutes[F]): HttpRoutes[F] =
+  mappings.sortBy(_._1.length).foldLeft(default) { case (acc, (prefix, routes)) =>
+    val prefixPath = Uri.Path.unsafeFromString(prefix)
+    if (prefixPath.isEmpty) routes <+> acc
+    else
+      Kleisli { req =>
+        if (req.pathInfo.startsWith(prefixPath))
+          routes(translate(prefixPath)(req)).orElse(acc(req))
+        else
+          acc(req)
+      }
+  }
+```
+
+---
+
+# つまり
+
+つまりhttp4sにおいてRouterの実装は、特定の用途ごとにHttpRoutesをマッピングする処理を行うということです。
+
 ---
 
 # サーバー
 
 ---
 
-# サービスの構築
-
----
-
-# ルーターの構築
-
----
-
-# サーバーの構築
-
----
-
 # IOAppでの実行
+
+[メモ]
+便利なことに、cats-effectはIO[ExitCode]を返す抽象的なrunメソッドを持つcats.effect.IOAppトレイトを提供します。IOAppはプロセスを実行し、SIGTERMを受信したときに無限プロセスを中断し、サーバーを優雅にシャットダウンするためにJVMシャットダウンフックを追加します。
 
 ---
 
