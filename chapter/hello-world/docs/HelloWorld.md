@@ -107,6 +107,8 @@ def of[F[_]: Monad](pf: PartialFunction[Request[F], F[Response[F]]]): HttpRoutes
   Kleisli(req => OptionT(Applicative[F].unit >> pf.lift(req).sequence))
 ```
 
+`Applicative[F].unit`は`pf.lift(req).sequence`の結果をFにliftしていると思ってください。
+
 ---
 
 # PartialFunctionとは
@@ -282,6 +284,20 @@ end requestToResponse
 
 val helloWorldService = HttpRoutes.of[IO] {
   case request => requestToResponse(request)
+}
+```
+
+※ 本来はもっと条件分岐が必要になってきます。
+
+---
+
+# unapply x パターンマッチの恩恵を受けずに書くと？
+
+愚直に書くととても実装が長くなってしまいますが、unapplyはパターンマッチで扱えるのでここにScalaの強力な型が組み合わさって、以下のようにとても少量のコードで同じような実装が実現できるのです。
+
+```scala
+val helloWorldService = HttpRoutes.of[IO] {
+  case GET -> Root / "hello" / name => Ok(s"Hello, $name.")
 }
 ```
 
