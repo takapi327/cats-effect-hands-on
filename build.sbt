@@ -1,3 +1,6 @@
+
+val http4sVersion = "0.23.16"
+
 lazy val commonSettings = Seq(
   version      := "1.0.0",
   organization := "com.github.takapi327",
@@ -21,6 +24,12 @@ lazy val commonSettings = Seq(
 lazy val helloWorld = (project in file("chapter/hello-world"))
   .settings(name := "hello-world")
   .settings(commonSettings: _*)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.http4s" %% "http4s-dsl" % http4sVersion,
+      "org.http4s" %% "http4s-ember-server" % http4sVersion
+    )
+  )
 
 lazy val catsEffect = (project in file("chapter/cats-effect"))
   .settings(name := "cats-effect")
