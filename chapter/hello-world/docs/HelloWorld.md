@@ -393,12 +393,213 @@ def define[F[_]: Monad](
 
 # サーバー
 
+最初に挙げたように、http4sは様々なバックエンドをサポートしています。
+今回はその中のEmberServerを使用してみます。
+
+サーバーの構築は各種Builderを使用して実装を行います。
+
+```scala
+import org.http4s.ember.server.EmberServerBuilder
+```
+
+---
+
+# サーバー
+
+以下が最小のサーバー構築になります。
+
+```scala
+EmberServerBuilder
+  .default[IO]
+  .withHttpApp(router.orNotFound)
+  .build
+```
+
+---
+
+# サーバー
+
+なぜ`default`なのか？
+これはEmberServerBuilderのパラメーターが`private`になっており、`default`でインスタンスの生成をdefault引数で行っているためです。
+
+```scala
+final class EmberServerBuilder[F[_]: Async: Network] private (...)
+
+...
+
+def default[F[_]: Async: Network]: EmberServerBuilder[F] =
+  new EmberServerBuilder[F](...)
+```
+
+---
+
+# サーバー
+
+EmberServerBuilderには`copy`メソッドが用意されており、各パラメーターの更新はこの`copy`メソッドを使用したメソッドを使用して更新を行っていきます。
+
+今回はHttpAppの更新を行うために、`withHttpApp`メソッドを使用してパラメーターの更新を行いました。
+
+```scala
+def withHttpApp(httpApp: HttpApp[F]): EmberServerBuilder[F] = copy(httpApp = _ => httpApp)
+```
+
+---
+
+# HttpApp?
+
+HttpAppとは`Kleisli[F, Request[G], Response[G]]`の型エイリアスです。
+
+HttpRoutesと似ていますね。では違いはなんでしょうか？
+2つを見比べてみると、HttpRoutesはOptionTになっています。
+
+```scala
+// HttpRoutes
+Kleisli[[T] =>> OptionT[F, T], Request[F], Response[F]]
+
+// HttpApp
+Kleisli[F, Request[G], Response[G]]
+```
+
+---
+
+# HttpApp?
+
+OptionTだと存在しないものがあった場合にNoneになってしまいます。
+もしサーバーを起動していて、どのRequestにも一致しないリクエストが来た場合どうなるでしょうか？
+
+おそらくNo Responseになってしまうので、この一致するパスが存在しないのか、サーバーがそもそも起動していないのかわかりにくいですよね。
+
+サーバーを起動した以上何かしらのResponseを返さないといけないので、サーバーで起動するHttpAppはOptionTでは無くなっているのです。
+
+---
+
+# HttpRoutes => HttpApp
+
+HttpRoutesからHttpAppへの変換は以下のように行います。
+
+```scala
+router.orNotFound
+```
+
+これは受け取ったRequestに該当するものがない場合、NotFoundのレスポンスを返すというシンプルなものです。
+
+---
+
+# HttpRoutes => HttpApp
+
+実装自体もシンプルなので、もし特別な処理が必要な場合は自身でカスタマイズして実装することもできます。
+
+```scala
+final class KleisliResponseOps[F[_]: Functor, A](self: Kleisli[OptionT[F, *], A, Response[F]]) {
+  def orNotFound: Kleisli[F, A, Response[F]] =
+    Kleisli(a => self.run(a).getOrElse(Response.notFound))
+}
+```
+
+---
+
+# サーバーの起動
+
+```scala
+import cats.effect.{ IO, Resource }
+import cats.effect.unsafe.implicits.global
+
+import org.http4s.*
+import org.http4s.dsl.io.*
+import org.http4s.server.{ Router, Server }
+import org.http4s.ember.server.EmberServerBuilder
+
+object HelloWorld:
+
+  val helloWorldService: HttpRoutes[IO] = HttpRoutes.of[IO] {
+    case GET -> Root / "hello" / name => Ok(s"Hello, $name.")
+  }
+
+  val router: HttpRoutes[IO] = Router(
+    "/" -> helloWorldService,
+  )
+
+  val server: Resource[IO, Server] = EmberServerBuilder
+    .default[IO]
+    .withHttpApp(router.orNotFound)
+    .build
+
+  def main(args: Array[String]): Unit =
+    server.use(_ => IO.never).unsafeRunSync()
+```
+
+---
+
+# サーバーの起動
+
+サーバーの起動は、以下のような処理で行います。
+
+serverは構築した時点では`Resource`になっているため、`use`を使用しています。
+`IO.never`を使用しているのは、サーバーは起動したら停止するまで起動し続けてもらう必要があるため設定しています。(これがないと`run`コマンドで実行しても即時停止してしまいます)
+
+最後にIOになったものを`unsafeRunSync`で実行しています。
+
+```scala
+def main(args: Array[String]): Unit =
+  server.use(_ => IO.never).unsafeRunSync()
+```
+
+※ IOに関してはIOの章で説明するので、ここではそういうものかぐらいで大丈夫です。
+
+---
+
+# サーバーの起動
+
+サーバーを起動した後、設定したパスにアクセスを行いレスポンスが正常に帰って来てるか確認してみましょう。
+
+```shell
+curl http://localhost:8080/hello/takapi
+```
+
 ---
 
 # IOAppでの実行
 
-[メモ]
-便利なことに、cats-effectはIO[ExitCode]を返す抽象的なrunメソッドを持つcats.effect.IOAppトレイトを提供します。IOAppはプロセスを実行し、SIGTERMを受信したときに無限プロセスを中断し、サーバーを優雅にシャットダウンするためにJVMシャットダウンフックを追加します。
+先ほど起動したサーバーをIOAppを使用して起動して見ましょう。
+
+IOAppはプロセスを実行して、SIGTERMを受信したときに無限プロセスを中断し、サーバーを優雅にシャットダウンするためにJVMシャットダウンフックを追加してくれるものです。
+
+IOを実行する時に必要な、Runtimeも内部で生成してくれます。
+
+※ こちらもIOの章で説明します。
+
+---
+
+# IOAppでの実行
+
+```scala
+import cats.effect.*
+
+import org.http4s.*
+import org.http4s.dsl.io.*
+import org.http4s.server.{ Router, Server }
+import org.http4s.ember.server.EmberServerBuilder
+
+object HelloWorldWithIOApp extends IOApp:
+
+  val helloWorldService: HttpRoutes[IO] = HttpRoutes.of[IO] {
+    case GET -> Root / "hello" / name => Ok(s"Hello, $name.")
+  }
+
+  val router: HttpRoutes[IO] = Router(
+    "/" -> helloWorldService,
+  )
+
+  val server: Resource[IO, Server] = EmberServerBuilder
+    .default[IO]
+    .withHttpApp(router.orNotFound)
+    .build
+
+  def run(args: List[String]): IO[ExitCode] =
+    server
+      .use(_ => IO.never)
+      .as(ExitCode.Success)
+```
 
 ---
 
