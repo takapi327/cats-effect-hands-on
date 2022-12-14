@@ -16,13 +16,13 @@ git clone git@github.com:takapi327/cats-effect-hands-on.git
 sbt compile
 ```
 
-## 1. http4sでのHello World :warning:準備中:warning:
+## 1. http4sでのHello World
 こちらの項目ではhttp4を使用してHello Worldの文字列をブラウザに表示するところまでを行う。
 
 以下参照
 
-- [ドキュメント](https://github.com/takapi327/cats-effect-hands-on/tree/master/chapter/hello-world/docs)
-- [アプリケーション](https://github.com/takapi327/cats-effect-hands-on/tree/master/chapter/hello-world)
+- [ドキュメント](https://github.com/takapi327/cats-effect-hands-on/blob/master/chapter/hello-world/docs/HelloWorld.md)
+- [アプリケーション](https://github.com/takapi327/cats-effect-hands-on/tree/master/chapter/hello-world/src/main/scala/hello/world)
 
 ## 2. Cats Effect IOに関して (1 ~ 10章ぐらい？) :warning:準備中:warning:
 こちらの項目ではCats Effect 3を使用してIOのEffect patternについて学ぶ
