@@ -32,7 +32,7 @@ http4sのサーバー/クライアントは以下表にあるものから選ん�
 ![height:500](../images/Backend-Integrations.png)
 
 ---
-# サーバー/クライアント
+
 以前までBlazeがメインサーバーでしたが、現在はEmberというものがメインで開発を行っているサーバーになります。
 
 ※ サンプルコードや記事ではBlazeServerを使うものが多いですが、最新はEmberServerなので使用する時は注意してください。
@@ -128,8 +128,6 @@ trait PartialFunction[-A, +B] extends (A) => B
 
 ---
 
-# PartialFunctionとは
-
 普通の関数と同じように呼び出すが、パターンにマッチしない場合はMatchErrorになる。
 
 ```scala
@@ -143,8 +141,6 @@ println(pf(2)) // => MatchError
 ```
 
 ---
-
-# PartialFunctionとは
 
 PartialFunctionは合成することができる。
 
@@ -161,8 +157,6 @@ println(pf3(3)) // => MatchError
 ```
 
 ---
-
-# PartialFunctionとは
 
 `of`メソッドの中で使われている`lift`はPartialFunctionのキーに該当してたらSomeに包んで値を返し、なければNoneを返すメソッド。
 
@@ -204,8 +198,6 @@ final class Request[F[_]] private (
 ```
 
 ---
-
-# Requestなんてないやん
 
 以下画像の赤枠で囲った部分が全てRequestになります。
 
@@ -263,8 +255,6 @@ object / {
 ```
 ---
 
-# Path / Path
-
 `/`は`->`でRequestをMethodとPathに分解した後に、Pathを更に分解するものになります。
 
 ---
@@ -293,8 +283,6 @@ val helloWorldService = HttpRoutes.of[IO] {
 ※ 本来はもっと条件分岐が必要になってきます。
 
 ---
-
-# unapply x パターンマッチの恩恵を受けずに書くと？
 
 愚直に書くととても実装が長くなってしまいますが、unapplyはパターンマッチで扱えるのでここにScalaの強力な型システムが組み合わさって、以下のようにとても少量のコードで同じような実装が実現できるのです。
 
@@ -328,8 +316,6 @@ val router: HttpRoutes[IO] = Router(
 
 ---
 
-# ルーター
-
 Play Frameworkのroutesファイルを思い出してください。
 
 Play Frameworkはベースに`routes`ファイルを定義して、ある特定のパス配下のルーティングを別のファイルに切り出して実装を行うことができましたよね？
@@ -345,8 +331,6 @@ Routerの実装は、http4におけるこのPlay Frameworkと同じような実�
 
 ---
 
-# ルーター
-
 Routerを構築したはずなのに、戻り値の型がサービスと同じになっているのに気づいたでしょうか？
 なぜRouterを構築しているのに型は変わらないのか？
 
@@ -360,8 +344,6 @@ def apply[F[_]: Monad](mappings: (String, HttpRoutes[F])*): HttpRoutes[F] =
 `apply`メソッドは`define`メソッドを呼んでいるのでそちらも見てみましょう。
 
 ---
-
-# ルーター
 
 単純に何をやっているかというと文字列で指定したパスの情報が空でなかった場合に、受け取ったRequestのパス情報の最初が指定されたパスの文字列と一致していれば後続の処理を行い、一致していない場合はdefault(ここではempty)の処理を行うようになっています。
 
@@ -403,8 +385,6 @@ import org.http4s.ember.server.EmberServerBuilder
 
 ---
 
-# サーバー
-
 以下が最小のサーバー構築になります。
 
 ```scala
@@ -421,8 +401,6 @@ typelevel系のライブラリは`EmberServerBuilder.default[F]`のように型�
 
 ---
 
-# サーバー
-
 なぜ`default`なのか？
 これはEmberServerBuilderのパラメーターが`private`になっており、`default`でインスタンスの生成をデフォルト引数で行っているためです。
 
@@ -436,8 +414,6 @@ def default[F[_]: Async: Network]: EmberServerBuilder[F] =
 ```
 
 ---
-
-# サーバー
 
 EmberServerBuilderには`copy`メソッドが用意されており、各パラメーターの更新はこの`copy`メソッドを使用したメソッドを使用して更新を行っていきます。
 
@@ -466,8 +442,6 @@ Kleisli[F, Request[G], Response[G]]
 
 ---
 
-# HttpApp?
-
 OptionTだと存在しないものがあった場合にNoneになってしまいます。
 もしサーバーを起動していて、どのRequestにも一致しないリクエストが来た場合どうなるでしょうか？
 
@@ -488,8 +462,6 @@ router.orNotFound
 これは受け取ったRequestに該当するものがない場合、NotFoundのレスポンスを返すというシンプルなものです。
 
 ---
-
-# HttpRoutes => HttpApp
 
 実装自体もシンプルなので、もし特別な処理が必要な場合は自身でカスタマイズして実装することもできます。
 
@@ -534,8 +506,6 @@ object HelloWorld:
 
 ---
 
-# サーバーの起動
-
 サーバーの起動は、以下のような処理で行います。
 
 serverは構築した時点では`Resource`になっているため、`use`を使用しています。
@@ -551,8 +521,6 @@ def main(args: Array[String]): Unit =
 ※ IOに関してはIOの章で説明するので、ここではそういうものかぐらいで大丈夫です。
 
 ---
-
-# サーバーの起動
 
 サーバーを起動した後、設定したパスにアクセスを行いレスポンスが正常に帰って来てるか確認してみましょう。
 
@@ -574,7 +542,7 @@ IOを実行する時に必要な、Runtimeも内部で生成してくれます�
 
 ---
 
-# IOAppでの実行
+実行コード
 
 ```scala
 import cats.effect.*
@@ -625,8 +593,6 @@ http4sは今まで触って来たものとは違い、かなり関数型だっ�
 
 ---
 
-# まとめ
-
 ScalaMatsuri2023用のアンケートの結果を見てみると、以下のように今回触ったものが上位を占めている状態です。
 
 1. Scala3
@@ -636,15 +602,11 @@ ScalaMatsuri2023用のアンケートの結果を見てみると、以下のよ�
 
 ---
 
-# まとめ
-
 アンケート結果 (母数...)
 
 ![](../images/ScalaMatsuri2023.png)
 
 ---
-
-# まとめ
 
 今回はhttp4sを軽く紹介しましたが、次はCats EffectのEffect Systemを勉強していく予定です。
 
