@@ -95,8 +95,7 @@ HttpRoutesを使用した最小サービス
 
 ```scala
 val helloWorldService = HttpRoutes.of[IO] {
-  case GET -> Root / "hello" / name =>
-    Ok(s"Hello, $name.")
+  case GET -> Root / "hello" / name => Ok(s"Hello, $name.")
 }
 ```
 
@@ -415,12 +414,17 @@ EmberServerBuilder
   .build
 ```
 
+typelevel系のライブラリは`EmberServerBuilder.default[F]`のように型パラメータでエフェクトシステムを切り替えることができるようになっています。
+
+また、`EmberServerBuilder.default[F].build`は`Resource`型を返すので開発者は明示的に`use` メソッドを呼ぶ必要があります。
+`Resource`はリソースの生成・破棄を自動で行う機能です。
+
 ---
 
 # サーバー
 
 なぜ`default`なのか？
-これはEmberServerBuilderのパラメーターが`private`になっており、`default`でインスタンスの生成をdefault引数で行っているためです。
+これはEmberServerBuilderのパラメーターが`private`になっており、`default`でインスタンスの生成をデフォルト引数で行っているためです。
 
 ```scala
 final class EmberServerBuilder[F[_]: Async: Network] private (...)
@@ -614,3 +618,34 @@ curl http://localhost:8080/hello/takapi
 ---
 
 # まとめ
+
+今まで触って来たPlay Frameworkと比べてみてどう感じましたか？
+
+http4sは今まで触って来たものとは違い、かなり関数型だったかと思います。
+
+---
+
+# まとめ
+
+ScalaMatsuri2023用のアンケートの結果を見てみると、以下のように今回触ったものが上位を占めている状態です。
+
+1. Scala3
+2. Software Design and Architecture
+3. 関数型プログラミング一般や圏論
+4. Effect System (Cats Effect / Monix / ZIO / eff etc.)
+
+---
+
+# まとめ
+
+アンケート結果 (母数...)
+
+![](../images/ScalaMatsuri2023.png)
+
+---
+
+# まとめ
+
+今回はhttp4sを軽く紹介しましたが、次はCats EffectのEffect Systemを勉強していく予定です。
+
+この夕学を通して、少しでもScalaを使ったEffect Systemや関数型プログラミングに興味を持っていただければなと思っています。
