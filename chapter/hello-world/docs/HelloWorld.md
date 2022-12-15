@@ -74,9 +74,74 @@ Kleisli[[T] =>> OptionT[F, T], Request[F], Response[F]]
 KleisliはRequest[F] => F[Response[F]]の便利なラッパーに過ぎず、Fは効果的な操作です。
 
 ※ Fは今回Cats EffectのIOを使用しますが、IOに関してはCats Effectの章で説明します。
-※ =>> はScala3で追加されたLambda Functionというものです。
+※ =>> はScala3で追加されたType Lambdaというものです。
 
 ---
+
+# Type Lambdaとは
+
+他の型をパラメーターとして受け取る型コンストラクターを型パラメーターとして使用したい場合は以下のように定義します。
+
+```scala
+trait TypeLambda[F[_]]
+```
+
+使用する時は以下のように定義します。
+```scala
+type F1 = TypeLambda[Option]
+type F2 = TypeLambda[List]
+```
+
+---
+
+ただMapのような2つの型パラメーターを必要とするものに関してはエラーとなってしまいます。
+
+```scala
+type F3 = TypeLambda[Map]
+```
+
+
+```shell
+[error] -- Error: ...
+[error] 14 |type F3 = TypeLambda[Map]
+[error]    |                     ^^^
+[error]    |        Type argument Map does not have the same kind as its bound [_$1]
+[error] one error found
+```
+
+---
+
+これは `F[_]`という形で型パラメータの数を一つとして定義しているため、型パラメータを二つ取る物を渡せないようになってしまっています。
+
+つまり、この場合最低でも1つの型は決まっていないといけないということです。
+
+```scala
+type MapA[A] = Map[Int, A]
+
+type F3 = TypeLambda[MapA]
+```
+
+けど、都度この型エイリアスを書くのもめんどくさいですよね。。。
+
+2つのパラメーターを受け取るようなものを作れば、まあいけるのだが。。。
+用途が限定されてしまいます。。。
+
+```scala
+trait TypeLambda1[F[_, _]]
+```
+
+---
+
+この問題を解決するために、無名の型を定義してそれを渡し、足りない型を補う方法が開発されました。
+
+それがType Lambdaと呼ばれるものです。
+
+```scala
+type F3 = TypeLambda[[A] =>> Map[Int, A]]
+```
+
+---
+
 
 # Kleisliとは
 
