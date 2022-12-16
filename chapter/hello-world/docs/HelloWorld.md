@@ -111,7 +111,7 @@ type F3 = TypeLambda[Map]
 
 ---
 
-これは `F[_]`という形で型パラメータの数を一つとして定義しているため、型パラメータを二つ取る物を渡せないようになってしまっています。
+これは `F[_]`という形で型パラメータの数を一つとして定義しているため、型パラメータを二つ取る物を渡せないようになってしまっているからです。
 
 つまり、この場合最低でも1つの型は決まっていないといけないということです。
 
@@ -135,9 +135,28 @@ trait TypeLambda1[F[_, _]]
 この問題を解決するために、無名の型を定義してそれを渡し、足りない型を補う方法が開発されました。
 
 それがType Lambdaと呼ばれるものです。
+(Scala2だとkinder projectと呼ばれるライブラリ？がありました。`*`で書くやつ)
 
 ```scala
 type F3 = TypeLambda[[A] =>> Map[Int, A]]
+```
+
+---
+
+このType Lambdaを使えば以下のように型エイリアスや専用の型パラメーターを持ったものを用意することなく実装を行うことができるので、とても便利です。
+
+```scala
+type F1 = TypeLambda[Option]
+type F2 = TypeLambda[List]
+type F3 = TypeLambda[[A] =>> Map[Int, A]]
+```
+
+こういう書き方もできたりします。
+
+```scala
+type TypeLambdaMap = [A] =>> [B] =>> Map[A, B]
+
+val typeLambda: TypeLambdaMap[Int][String] = Map(1 -> "")
 ```
 
 ---
@@ -151,6 +170,75 @@ Kleisliは `A => F[B]` という型の関数に対する特殊なラッパー
 - 圏論的に学びたい人は[こちら](https://criceta.com/category-theory-with-scala/04_Kleisli_category.html)を参照
 
 ---
+
+まず関数には合成することができるという特性があります。
+
+関数A => Bと関数B => Cがあれば、それらを組み合わせて新しい関数A => Cを作ることができる。
+
+---
+
+Catsドキュメントからの引用
+
+```scala
+val twice: Int => Int =
+  x => x * 2
+
+val countCats: Int => String =
+  x => if (x == 1) "1 cat" else s"$x cats"
+
+val twiceAsManyCats: Int => String =
+  twice andThen countCats
+```
+
+```shell
+twiceAsManyCats(1) // "2 cats"
+// res0: String = "2 cats"
+```
+
+---
+
+実装しているとモナド値を返すような関数を作ることはたくさんあると思います。
+これを合成することはできるでしょうか？
+
+```scala
+val parse: String => Option[Int] =
+  s => if (s.matches("-?[0-9]+")) Some(s.toInt) else None
+
+val reciprocal: Int => Option[Double] =
+  i => if (i != 0) Some(1.0 / i) else None
+```
+
+---
+
+もし合成をしたいとなっても愚直にやる必要が出てきてしまいます。
+
+純粋に`andThen`を使って合成することができず、何か処理が必要となってしまいます。
+
+```scala
+val parseReciprocal: String => Option[Double] =
+  parse.andThen(_.flatMap(reciprocal))
+```
+
+---
+
+Kleisliを使えばモナド値が含まれていても簡単に合成することができる。
+実装自体もKleisliで囲むだけで良い
+
+```scala
+val parse: Kleisli[Option, String, Int] =
+  Kleisli((s: String) => if s.matches("-?[0-9]+") then Some(s.toInt) else None)
+
+val reciprocal: Kleisli[Option, Int, Double] =
+  Kleisli((i: Int) => if i != 0 then Some(1.0 / i) else None)
+
+val parseReciprocal: Kleisli[Option, String, Double] =
+  parse andThen reciprocal
+```
+
+SGPのチャットボットはKleisliを使って、用途ごとに処理を分けて最後に合成を行って1つの関数にしています。
+
+---
+
 
 # サービス
 
@@ -237,6 +325,26 @@ def of[F[_]: Monad](pf: PartialFunction[Request[F], F[Response[F]]]): HttpRoutes
 つまりHttpRoutesの構築は、リクエストを受け取りそのリクエストに一致したものがあればその値(Response)を返す関数だということがわかります。
 
 ---
+
+# つまり
+
+KleisleもPartialFunctionも合成可能。
+つまり、HttpRoutesも合成ができるということ
+
+```scala
+  val helloWorldService: HttpRoutes[IO] = HttpRoutes.of[IO] {
+    case GET -> Root / "hello" / name => Ok(s"Hello, $name.")
+  }
+
+  val crudService: HttpRoutes[IO] = HttpRoutes.of[IO] {
+    case GET -> Root / "crud" => Ok("CRUD")
+  }
+
+  val composeService: HttpRoutes[IO] = helloWorldService <+> crudService
+```
+
+---
+
 
 # Requestなんてないやん
 
@@ -658,12 +766,15 @@ http4sは今まで触って来たものとは違い、かなり関数型だっ�
 
 ---
 
+今回触った技術に関して、
 ScalaMatsuri2023用のアンケートの結果を見てみると、以下のように今回触ったものが上位を占めている状態です。
 
 1. Scala3
 2. Software Design and Architecture
 3. 関数型プログラミング一般や圏論
 4. Effect System (Cats Effect / Monix / ZIO / eff etc.)
+
+興味はあるけど〜みたいな人が多い？
 
 ---
 
@@ -673,6 +784,13 @@ ScalaMatsuri2023用のアンケートの結果を見てみると、以下のよ�
 
 ---
 
-今回はhttp4sを軽く紹介しましたが、次はCats EffectのEffect Systemを勉強していく予定です。
+今回はhttp4sを軽く紹介しましたが、今回話した内容以外にもMiddlewareや、クライアント、テストなどいろいろなものがあります。
 
-この夕学を通して、少しでもScalaを使ったEffect Systemや関数型プログラミングに興味を持っていただければなと思っています。
+こちらに関しても、色々話せればと思いますが、
+次はCats EffectのEffect Systemを勉強していく予定です。
+
+この夕学を通して、少しでもScalaを使ったEffect Systemや関数型プログラミングに興味を持っていただければなと思います。
+
+---
+
+ありがとうございました。
