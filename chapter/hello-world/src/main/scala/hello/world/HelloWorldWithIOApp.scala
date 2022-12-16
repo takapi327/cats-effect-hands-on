@@ -1,7 +1,5 @@
 package hello.world
 
-import cats.syntax.all.*
-
 import cats.effect.*
 
 import org.http4s.*
@@ -15,14 +13,8 @@ object HelloWorldWithIOApp extends IOApp:
     case GET -> Root / "hello" / name => Ok(s"Hello, $name.")
   }
 
-  val crudService: HttpRoutes[IO] = HttpRoutes.of[IO] {
-    case GET -> Root / "crud" => Ok("CRUD")
-  }
-
-  val composeService: HttpRoutes[IO] = helloWorldService <+> crudService
-
   val router: HttpRoutes[IO] = Router(
-    "/" -> composeService,
+    "/" -> helloWorldService,
   )
 
   val server: Resource[IO, Server] = EmberServerBuilder
