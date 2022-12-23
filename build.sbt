@@ -34,6 +34,11 @@ lazy val helloWorld = (project in file("chapter/hello-world"))
 lazy val catsEffect = (project in file("chapter/cats-effect"))
   .settings(name := "cats-effect")
   .settings(commonSettings: _*)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-effect" % "3.4.2"
+    )
+  )
 
 lazy val doobie = (project in file("chapter/doobie"))
   .settings(name := "doobie")
